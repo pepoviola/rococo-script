@@ -8,6 +8,7 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { Keyring } from "@polkadot/keyring";
 import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { spawn } from "child_process";
+import fs from "fs";
 
 async function connect(apiUrl) {
   const provider = new WsProvider(apiUrl);
@@ -31,15 +32,16 @@ async function get_signer() {
 
 async function sendTx(api, sudo, index) {
   let nonce = (
-    (await api.query.system.account(sudo.address))
+      (await api.query.system.account(sudo.address))
   ).nonce.toNumber();
-
   console.log(`[index: ${index}] nonce: ${nonce}`);
 
   const unsub = await api.tx.sudo
   .sudo(api.tx.system.setStorage(
-    ("0x1cb6f36e027abb2091cfb5110ab5087f38316cbf8fa0da822a20ac1c55bf1be3", "0x7734000000000000"),
-    ("0x1cb6f36e027abb2091cfb5110ab5087f37b8842f54c7eddf02b5e584aa2ae6cc", "0x00"),
+    (
+      ("0x1cb6f36e027abb2091cfb5110ab5087f38316cbf8fa0da822a20ac1c55bf1be3", "0x7734000000000000"),
+      ("0x1cb6f36e027abb2091cfb5110ab5087f37b8842f54c7eddf02b5e584aa2ae6cc", "0x00")
+    ),
   ))
   .signAndSend(sudo, { nonce: nonce, era: 0 }, (result) => {
     console.log(`[index: ${index}] Current status is ${result.status}`);
@@ -66,6 +68,7 @@ async function sendTx(api, sudo, index) {
   });
 }
 
+
 async function run_one(endpoint, index, sudo) {
     console.log(`[index: ${index}] creating port-fw for ${endpoint} with index ${index} (6000 + index)`);
     let localPort = BASE_PORT + index;
@@ -73,8 +76,10 @@ async function run_one(endpoint, index, sudo) {
     console.log(`[index: ${index}] connected! port-fw for ${endpoint} local: ${localPort} - remote ${REMOTE_PORT}`);
     const api = await connect(`ws://localhost:${localPort}`);
     console.log(`[index: ${index}] api connected!`);
+
     await sendTx(api, sudo, index);
 }
+
 async function run_all(endpoints) {
   const sudo = await get_signer();
   let index = -1;
@@ -157,8 +162,7 @@ async function startPortForwarding(
   }
 
 
-const e = process.argv[2].split("\n");
-
+const e = fs.readFileSync(process.argv[2]).toString().split("\n").filter(Boolean);
 (async () => {
   await run_all(e);
   console.log("DONE!");
