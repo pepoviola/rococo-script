@@ -27,8 +27,6 @@ async function get_signer() {
   return sudo;
 }
 
-//connect("ws://ferdie.zombie-d6dd9e58c38ee6e09a016bd771d82be6.svc.cluster.local:9944").then(console.log).catch(console.log);
-
 
 async function sendTx(api, sudo, index) {
   let nonce = (
